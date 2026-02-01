@@ -122,7 +122,7 @@
 
     <!-- BOOT SCREEN -->
     <div id="boot-screen" class="bg-black text-white">
-        <div class="text-4xl font-bold mb-4 tracking-widest">PANOPTICON.SYS</div>
+        <div class="text-4xl font-bold mb-4 tracking-widest">SQUIDGAME_Interactive</div>
         <div class="text-xs font-mono text-gray-500 mb-8">INITIALIZING SENSORS... OK</div>
         <button onclick="enterSystem()" class="pulse-btn px-8 py-3 border border-red-600 text-red-500 font-mono hover:bg-red-600 hover:text-white transition-colors uppercase tracking-widest">
             [ 初始化系統 ]
@@ -153,7 +153,7 @@
         <section id="q5-concept" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-8 hud-panel p-8 corner-box">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl md:text-2xl text-white font-bold"><span class="text-red-500 mr-2">Q5</span>全景敞視的道德困境</h2>
+                    <h2 class="text-xl md:text-2xl text-white font-bold"><span class="text-red-500 mr-2"></span>全景敞視的道德困境</h2>
                     <span class="text-xs font-mono text-gray-500 border border-gray-700 px-1">CONCEPT_CORE</span>
                 </div>
                 <div class="text-sm text-gray-300 leading-relaxed font-mono space-y-4">
@@ -176,7 +176,7 @@
         <!-- Q1: INTERACTIVE JOURNEY (The "Glitchy" part fixed) -->
         <section id="q1-journey" class="hud-panel p-6 corner-box">
             <div class="mb-6 flex justify-between items-end">
-                <h2 class="text-xl text-white font-bold"><span class="text-red-500 mr-2">Q1</span>體驗流程動線</h2>
+                <h2 class="text-xl text-white font-bold"><span class="text-red-500 mr-2"></span>體驗流程動線</h2>
                 <div class="text-[10px] text-gray-500 font-mono">INTERACTIVE_MODE: ENABLED</div>
             </div>
 
@@ -222,7 +222,7 @@
         <section id="q2-hardware" class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Q2 Props -->
             <div class="hud-panel p-6 corner-box hover:border-gray-500 transition-colors">
-                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2">Q2</span>實體道具</div>
+                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2"></span>實體道具</div>
                 <ul class="space-y-4 text-xs font-mono text-gray-400">
                     <li class="border-l-2 border-gray-700 pl-3">
                         <strong class="text-gray-200 block">經典綠色運動服</strong>
@@ -241,37 +241,37 @@
 
             <!-- Q3 Sensors -->
             <div class="hud-panel p-6 corner-box hover:border-gray-500 transition-colors">
-                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2">Q3</span>感測器</div>
+                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2"></span>感測器</div>
                 <ul class="space-y-4 text-xs font-mono text-gray-400">
                     <li class="border-l-2 border-red-800 pl-3">
-                        <strong class="text-red-400 block">RFID + 光學心率傳感器</strong>
-                        手環核心。S1觸發紅光同步，S2判定恐懼失敗。
+                        <strong class="text-red-400 block">電子手環 (RFID + 心率傳感器)</strong>
+                        手環核心。捕捉一二三木頭人的心率變化。S1觸發紅光同步，S2判定恐懼失敗。
                     </li>
                     <li class="border-l-2 border-gray-700 pl-3">
-                        <strong class="text-gray-200 block">UWB (超寬頻) 定位</strong>
-                        S3核心。精準判斷玩家間距，生成孤立陷阱。
+                        <strong class="text-gray-200 block">HOKUYO 雷達定位</strong>
+                        S3核心。判斷玩家間距，生成孤立陷阱。
                     </li>
                     <li class="border-l-2 border-gray-700 pl-3">
-                        <strong class="text-gray-200 block">LIDAR (光達)</strong>
-                        天花板陣列。捕捉一二三木頭人的微小動作。
+                        <strong class="text-gray-200 block">攝影機（包含紅外線功能）</strong>
+                        捕捉體驗者動作紀錄。
                     </li>
                 </ul>
             </div>
 
             <!-- Q4 Display -->
             <div class="hud-panel p-6 corner-box hover:border-gray-500 transition-colors">
-                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2">Q4</span>顯示系統</div>
+                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2"></span>顯示系統</div>
                 <ul class="space-y-4 text-xs font-mono text-gray-400">
                     <li class="border-l-2 border-gray-700 pl-3">
-                        <strong class="text-gray-200 block">沈浸式呼吸燈陣列</strong>
-                        全場域DMX控制。將生理數據轉化為環境光頻率。
+                        <strong class="text-gray-200 block">沈浸式呼吸燈空間</strong>
+                        將生理數據轉化為環境光頻率。
                     </li>
                     <li class="border-l-2 border-gray-700 pl-3">
-                        <strong class="text-gray-200 block">互動式 LED 地磚</strong>
+                        <strong class="text-gray-200 block">LED 拼接螢幕</strong>
                         S3高強度玻璃下埋設。觸發時模擬碎裂視覺。
                     </li>
                     <li class="border-l-2 border-gray-700 pl-3">
-                        <strong class="text-gray-200 block">單面鏡 (One-way Mirror)</strong>
+                        <strong class="text-gray-200 block">單面鏡</strong>
                         S4核心。VIP觀測室使用，建立權力不對等視角。
                     </li>
                 </ul>
@@ -323,7 +323,7 @@
         // --- 2. STAGE DATA MODEL ---
         const stageData = [
             {
-                title: "S0: 數位契約 (T-Minus 48H)",
+                title: "S0: 數位契約",
                 content: `<ul class='list-disc pl-4 space-y-2 text-gray-300'>
                     <li><strong class='text-white'>觸發點：</strong>展覽前48小時，購票者收到神秘加密信件。</li>
                     <li><strong class='text-white'>行動：</strong>要求回簽「免責聲明」並回答道德困境（電車難題變體）。</li>
@@ -331,15 +331,15 @@
                 </ul>`
             },
             {
-                title: "S1: 去個人化 (Entry Phase)",
+                title: "S1: 去個人化",
                 content: `<ul class='list-disc pl-4 space-y-2 text-gray-300'>
                     <li><strong class='text-white'>環境：</strong>全白過渡區，低頻噪音。</li>
-                    <li><strong class='text-white'>裝備：</strong>穿上編號運動服，配戴骨傳導面具與心率手環。</li>
+                    <li><strong class='text-white'>裝備：</strong>穿上編號運動服，配戴心率手環。</li>
                     <li><strong class='text-white'>特別機制：</strong>鏡像空間燈光轉為紅色，頻率與<span class='text-red-500'>在場心率最高者</span>同步，展現「生理被監控」的恐懼。</li>
                 </ul>`
             },
             {
-                title: "S2: 生理控制 (The Watcher)",
+                title: "S2: 一二三木頭人",
                 content: `<ul class='list-disc pl-4 space-y-2 text-gray-300'>
                     <li><strong class='text-white'>規則：</strong>「一二三木頭人」變體。</li>
                     <li><strong class='text-white'>難點：</strong>巨型娃娃轉頭時，不僅要停止動作，還必須<span class='text-red-500'>強制降低心率</span>。</li>
@@ -348,7 +348,7 @@
                 </ul>`
             },
             {
-                title: "S3: 連結博弈 (Glass Bridge)",
+                title: "S3: 玻璃橋",
                 content: `<ul class='list-disc pl-4 space-y-2 text-gray-300'>
                     <li><strong class='text-white'>技術：</strong>UWB定位 + 互動地磚。</li>
                     <li><strong class='text-white'>機制：</strong>雷達偵測群體距離。落單者周圍更容易生成陷阱。</li>
