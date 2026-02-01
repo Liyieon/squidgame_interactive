@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANOPTICON.SYSTEM // 互動修復版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- 
+    REPAIR LOG:
+    1. Fixed Z-Index issues where scanlines blocked clicks.
+    2. Added JavaScript interactivity for Stage Selection (Q1).
+    3. Added "System Boot" overlay for immersive start.
+    4. Restored Chart.js responsiveness.
+    -->
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;500;700&display=swap');
+
+        :root {
+            --bg-void: #050505;
+            --grid-line: #1f1f1f;
+            --text-main: #c0c0c0;
+            --text-bright: #ffffff;
+            --accent-red: #ff003c; /* Alert/Power */
+            --accent-green: #00ff9d; /* System OK */
+        }
+
+        body {
+            background-color: var(--bg-void);
+            color: var(--text-main);
+            font-family: 'Share Tech Mono', 'Noto Sans TC', monospace;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* --- UI COMPONENTS --- */
+        .hud-panel {
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid #333;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .hud-btn {
+            border: 1px solid #444;
+            background: rgba(0,0,0,0.5);
+            color: #888;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+        .hud-btn:hover {
+            border-color: var(--text-bright);
+            color: var(--text-bright);
+            background: rgba(255,255,255,0.05);
+        }
+        .hud-btn.active {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+            background: rgba(255, 0, 60, 0.1);
+        }
+        .hud-btn.active::before {
+            content: '►';
+            position: absolute; right: 10px; top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+        }
+
+        /* Corner Markers */
+        .corner-box { position: relative; }
+        .corner-box::before {
+            content: ''; position: absolute; top: -1px; left: -1px;
+            width: 8px; height: 8px; border-top: 2px solid var(--accent-red); border-left: 2px solid var(--accent-red);
+        }
+        .corner-box::after {
+            content: ''; position: absolute; bottom: -1px; right: -1px;
+            width: 8px; height: 8px; border-bottom: 2px solid var(--accent-red); border-right: 2px solid var(--accent-red);
+        }
+
+        /* Scanlines - Fixed Pointer Events */
+        .scanlines {
+            position: fixed; inset: 0; pointer-events: none; z-index: 999;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            opacity: 0.15;
+        }
+
+        /* Initial Overlay */
+        #boot-screen {
+            position: fixed; inset: 0; bg: #000; z-index: 1000;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+            transition: opacity 0.5s;
+        }
+        
+        /* Animations */
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 0, 60, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 0, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 0, 60, 0); } }
+        .pulse-btn { animation: pulse-red 2s infinite; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border: 1px solid #000; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-red); }
+
+        .hidden-content { display: none; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- SCANLINES OVERLAY (Pointer Events None) -->
+    <div class="scanlines"></div>
+
+    <!-- BOOT SCREEN -->
+    <div id="boot-screen" class="bg-black text-white">
+        <div class="text-4xl font-bold mb-4 tracking-widest">PANOPTICON.SYS</div>
+        <div class="text-xs font-mono text-gray-500 mb-8">INITIALIZING SENSORS... OK</div>
+        <button onclick="enterSystem()" class="pulse-btn px-8 py-3 border border-red-600 text-red-500 font-mono hover:bg-red-600 hover:text-white transition-colors uppercase tracking-widest">
+            [ 初始化系統 ]
+        </button>
+    </div>
+
+    <!-- NAV BAR -->
+    <header class="fixed top-0 w-full z-50 bg-black/90 border-b border-[#333] backdrop-blur-md h-14 flex items-center justify-between px-4 lg:px-8">
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+            <span class="font-bold tracking-widest text-white">PANOPTICON</span>
+        </div>
+        <nav class="hidden md:flex gap-6 text-xs font-mono">
+            <a href="#q5-concept" class="hover:text-red-500 transition-colors">Q5.核心概念</a>
+            <a href="#q1-journey" class="hover:text-red-500 transition-colors">Q1.流程動線</a>
+            <a href="#q2-hardware" class="hover:text-red-500 transition-colors">Q2-4.技術規格</a>
+            <a href="#q6-team" class="hover:text-red-500 transition-colors">Q6.團隊編制</a>
+        </nav>
+        <div class="text-[10px] text-gray-500 font-mono border border-gray-800 px-2 py-1">
+            STATUS: ONLINE
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="pt-20 pb-10 px-4 max-w-7xl mx-auto w-full space-y-12">
+
+        <!-- Q5: CORE CONCEPT & CHART -->
+        <section id="q5-concept" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-8 hud-panel p-8 corner-box">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl md:text-2xl text-white font-bold"><span class="text-red-500 mr-2">Q5</span>全景敞視的道德困境</h2>
+                    <span class="text-xs font-mono text-gray-500 border border-gray-700 px-1">CONCEPT_CORE</span>
+                </div>
+                <div class="text-sm text-gray-300 leading-relaxed font-mono space-y-4">
+                    <p>
+                        <strong class="text-white">核心概念：</strong>沈浸式劇場往往賦予玩家主角光環，但在這裡，主體是被剝奪的。系統不僅看見你的位置，更透過<span class="text-red-400">心率傳感器</span>看穿你的恐懼。這是一場關於「在大數據監控下，眾人如何直面慾望」的社會實驗。
+                    </p>
+                    <p>
+                        <strong class="text-white">情感主軸：</strong>從「去個人化」的恐懼，轉化為「博弈」的猜疑，最終在「權力轉化」中體驗加害者的視角。
+                    </p>
+                </div>
+            </div>
+            <div class="lg:col-span-4 hud-panel p-4 flex flex-col justify-center">
+                <div class="text-xs text-center text-gray-500 mb-2 font-mono">EMOTIONAL_FLOW_DATA</div>
+                <div class="h-[200px] w-full relative">
+                    <canvas id="conceptChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Q1: INTERACTIVE JOURNEY (The "Glitchy" part fixed) -->
+        <section id="q1-journey" class="hud-panel p-6 corner-box">
+            <div class="mb-6 flex justify-between items-end">
+                <h2 class="text-xl text-white font-bold"><span class="text-red-500 mr-2">Q1</span>體驗流程動線</h2>
+                <div class="text-[10px] text-gray-500 font-mono">INTERACTIVE_MODE: ENABLED</div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-8">
+                <!-- Left: Stage Selector -->
+                <div class="lg:col-span-4 flex flex-col gap-2">
+                    <button class="hud-btn p-4 active" onclick="setStage(0, this)">
+                        <div class="text-[10px] font-mono mb-1">PRE-ARRIVAL</div>
+                        <div class="font-bold">S0: 數位契約</div>
+                    </button>
+                    <button class="hud-btn p-4" onclick="setStage(1, this)">
+                        <div class="text-[10px] font-mono mb-1">PHASE_01</div>
+                        <div class="font-bold">S1: 去個人化</div>
+                    </button>
+                    <button class="hud-btn p-4" onclick="setStage(2, this)">
+                        <div class="text-[10px] font-mono mb-1">GAME_I</div>
+                        <div class="font-bold">S2: 生理控制</div>
+                    </button>
+                    <button class="hud-btn p-4" onclick="setStage(3, this)">
+                        <div class="text-[10px] font-mono mb-1">GAME_II</div>
+                        <div class="font-bold">S3: 連結博弈</div>
+                    </button>
+                    <button class="hud-btn p-4 border-red-900 bg-red-900/10" onclick="setStage(4, this)">
+                        <div class="text-[10px] font-mono mb-1 text-red-400">CONVERGENCE</div>
+                        <div class="font-bold text-red-500">S4: 權力轉化</div>
+                    </button>
+                </div>
+
+                <!-- Right: Stage Details Display -->
+                <div class="lg:col-span-8 bg-black border border-[#333] p-6 relative min-h-[300px]">
+                    <!-- Scanline inside display -->
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiAvPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSIxIiBmaWxsPSIjMjIyIiAvPgo8L3N2Zz4=')] opacity-50 pointer-events-none"></div>
+                    
+                    <!-- Dynamic Content -->
+                    <div id="stage-content" class="relative z-10 font-mono text-sm leading-relaxed fade-in">
+                        <!-- Content injected by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Q2, Q3, Q4: HARDWARE GRID -->
+        <section id="q2-hardware" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Q2 Props -->
+            <div class="hud-panel p-6 corner-box hover:border-gray-500 transition-colors">
+                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2">Q2</span>實體道具</div>
+                <ul class="space-y-4 text-xs font-mono text-gray-400">
+                    <li class="border-l-2 border-gray-700 pl-3">
+                        <strong class="text-gray-200 block">經典綠色運動服</strong>
+                        視覺統一，剝奪個人穿搭風格。
+                    </li>
+                    <li class="border-l-2 border-gray-700 pl-3">
+                        <strong class="text-gray-200 block">骨傳導面具 (S1)</strong>
+                        隔絕外部雜音，強制聽取系統指令。
+                    </li>
+                    <li class="border-l-2 border-gray-700 pl-3">
+                        <strong class="text-gray-200 block">震動反饋背心</strong>
+                        模擬遭到擊殺時的物理衝擊。
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Q3 Sensors -->
+            <div class="hud-panel p-6 corner-box hover:border-gray-500 transition-colors">
+                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2">Q3</span>感測器</div>
+                <ul class="space-y-4 text-xs font-mono text-gray-400">
+                    <li class="border-l-2 border-red-800 pl-3">
+                        <strong class="text-red-400 block">RFID + 光學心率傳感器</strong>
+                        手環核心。S1觸發紅光同步，S2判定恐懼失敗。
+                    </li>
+                    <li class="border-l-2 border-gray-700 pl-3">
+                        <strong class="text-gray-200 block">UWB (超寬頻) 定位</strong>
+                        S3核心。精準判斷玩家間距，生成孤立陷阱。
+                    </li>
+                    <li class="border-l-2 border-gray-700 pl-3">
+                        <strong class="text-gray-200 block">LIDAR (光達)</strong>
+                        天花板陣列。捕捉一二三木頭人的微小動作。
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Q4 Display -->
+            <div class="hud-panel p-6 corner-box hover:border-gray-500 transition-colors">
+                <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2">Q4</span>顯示系統</div>
+                <ul class="space-y-4 text-xs font-mono text-gray-400">
+                    <li class="border-l-2 border-gray-700 pl-3">
+                        <strong class="text-gray-200 block">沈浸式呼吸燈陣列</strong>
+                        全場域DMX控制。將生理數據轉化為環境光頻率。
+                    </li>
+                    <li class="border-l-2 border-gray-700 pl-3">
+                        <strong class="text-gray-200 block">互動式 LED 地磚</strong>
+                        S3高強度玻璃下埋設。觸發時模擬碎裂視覺。
+                    </li>
+                    <li class="border-l-2 border-gray-700 pl-3">
+                        <strong class="text-gray-200 block">單面鏡 (One-way Mirror)</strong>
+                        S4核心。VIP觀測室使用，建立權力不對等視角。
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Q6: TEAM ROLES -->
+        <section id="q6-team" class="hud-panel p-6">
+            <div class="mb-4 text-white font-bold"><span class="text-red-500 mr-2">Q6</span>團隊分工編制</div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono text-gray-400 border-collapse">
+                    <thead class="bg-[#111] text-gray-200">
+                        <tr>
+                            <th class="p-3 border border-[#333]">組別</th>
+                            <th class="p-3 border border-[#333]">職稱</th>
+                            <th class="p-3 border border-[#333]">職責重點</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="p-3 border border-[#333]">核心</td><td class="text-white border border-[#333] p-3">創意總監</td><td class="border border-[#333] p-3">IP 轉化、核心敘事定調</td></tr>
+                        <tr><td class="p-3 border border-[#333]">核心</td><td class="border border-[#333] p-3">體驗架構與編劇</td><td class="border border-[#333] p-3">腳本、道德困境題目設計</td></tr>
+                        <tr><td class="p-3 border border-[#333]">技術</td><td class="text-white border border-[#333] p-3">技術創意執行</td><td class="border border-[#333] p-3">解決技術瓶頸、創新研發</td></tr>
+                        <tr><td class="p-3 border border-[#333]">技術</td><td class="border border-[#333] p-3">整合互動系統開發(軟)</td><td class="border border-[#333] p-3">中控系統、數據視覺化整合</td></tr>
+                        <tr><td class="p-3 border border-[#333]">技術</td><td class="border border-[#333] p-3">互動設備工程師(硬)</td><td class="border border-[#333] p-3">感測器佈線、機關維修</td></tr>
+                        <tr><td class="p-3 border border-[#333]">營運</td><td class="text-red-400 border border-[#333] p-3">設備監督</td><td class="border border-[#333] p-3">即時監控參數 (燈光/音量/難度)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-[#333] bg-black p-4 text-center text-[10px] font-mono text-gray-600">
+        SYSTEM_ID: PANOPTICON_V3.1 // INTERACTION RESTORED
+    </footer>
+
+    <script>
+        // --- 1. SYSTEM BOOT ---
+        function enterSystem() {
+            const screen = document.getElementById('boot-screen');
+            screen.style.opacity = '0';
+            setTimeout(() => {
+                screen.style.display = 'none';
+                initCharts(); // Init charts after boot to ensure size is correct
+            }, 500);
+        }
+
+        // --- 2. STAGE DATA MODEL ---
+        const stageData = [
+            {
+                title: "S0: 數位契約 (T-Minus 48H)",
+                content: `<ul class='list-disc pl-4 space-y-2 text-gray-300'>
+                    <li><strong class='text-white'>觸發點：</strong>展覽前48小時，購票者收到神秘加密信件。</li>
+                    <li><strong class='text-white'>行動：</strong>要求回簽「免責聲明」並回答道德困境（電車難題變體）。</li>
+                    <li><strong class='text-white'>數據：</strong>系統生成每位觀眾的初始『債務值』與道德側寫。</li>
+                </ul>`
+            },
+            {
+                title: "S1: 去個人化 (Entry Phase)",
+                content: `<ul class='list-disc pl-4 space-y-2 text-gray-300'>
+                    <li><strong class='text-white'>環境：</strong>全白過渡區，低頻噪音。</li>
+                    <li><strong class='text-white'>裝備：</strong>穿上編號運動服，配戴骨傳導面具與心率手環。</li>
+                    <li><strong class='text-white'>特別機制：</strong>鏡像空間燈光轉為紅色，頻率與<span class='text-red-500'>在場心率最高者</span>同步，展現「生理被監控」的恐懼。</li>
+                </ul>`
+            },
+            {
+                title: "S2: 生理控制 (The Watcher)",
+                content: `<ul class='list-disc pl-4 space-y-2 text-gray-300'>
+                    <li><strong class='text-white'>規則：</strong>「一二三木頭人」變體。</li>
+                    <li><strong class='text-white'>難點：</strong>巨型娃娃轉頭時，不僅要停止動作，還必須<span class='text-red-500'>強制降低心率</span>。</li>
+                    <li><strong class='text-white'>懲罰：</strong>若心率飆升，手環劇烈震動並發出紅光淘汰。</li>
+                    <li><strong class='text-white'>動線分流：</strong>存活者前往S3，<span class='text-red-400 border-b border-red-500'>淘汰者直接前往S4</span>。</li>
+                </ul>`
+            },
+            {
+                title: "S3: 連結博弈 (Glass Bridge)",
+                content: `<ul class='list-disc pl-4 space-y-2 text-gray-300'>
+                    <li><strong class='text-white'>技術：</strong>UWB定位 + 互動地磚。</li>
+                    <li><strong class='text-white'>機制：</strong>雷達偵測群體距離。落單者周圍更容易生成陷阱。</li>
+                    <li><strong class='text-white'>困境：</strong>必須合作才能通過，但群體可選擇孤立某人以減少通關者。</li>
+                    <li><strong class='text-white'>動線分流：</strong>通關與淘汰者最終皆匯流至S4。</li>
+                </ul>`
+            },
+            {
+                title: "S4: 權力轉化 (The VIP)",
+                content: `<div class='border-l-4 border-red-600 pl-4 bg-red-900/20 p-4'>
+                    <h3 class='text-red-500 font-bold mb-2'>關鍵轉折：加害者視角</h3>
+                    <p class='text-gray-300 mb-2'>所有淘汰者與最終通關者匯流至此。</p>
+                    <ul class='list-disc pl-4 space-y-1 text-gray-400'>
+                        <li>進入單面鏡觀測室 (VIP Lounge)。</li>
+                        <li>賦予控制權：可觀看下一批體驗者，並操作場內機關。</li>
+                        <li>核心隱喻：從受害者轉變為體制的共犯。</li>
+                    </ul>
+                </div>`
+            }
+        ];
+
+        // --- 3. INTERACTION LOGIC ---
+        function setStage(index, btn) {
+            // Update Buttons
+            document.querySelectorAll('.hud-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update Content with Animation
+            const display = document.getElementById('stage-content');
+            display.classList.remove('fade-in');
+            void display.offsetWidth; // trigger reflow
+            
+            display.innerHTML = `
+                <h3 class="text-xl font-bold text-white mb-4 border-b border-gray-800 pb-2">${stageData[index].title}</h3>
+                ${stageData[index].content}
+            `;
+            display.classList.add('fade-in');
+        }
+
+        // --- 4. CHARTS ---
+        function initCharts() {
+            const ctx = document.getElementById('conceptChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['S0', 'S1', 'S2', 'S3', 'S4'],
+                    datasets: [{
+                        label: '壓力 (Stress)',
+                        data: [10, 50, 90, 75, 30],
+                        borderColor: '#fff',
+                        borderWidth: 1,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }, {
+                        label: '權力 (Power)',
+                        data: [0, 0, 5, 10, 100],
+                        borderColor: '#ff003c',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        pointBackgroundColor: '#ff003c'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 2000, easing: 'easeOutQuart' },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#666', font: { family: 'Share Tech Mono' } } },
+                        y: { display: false }
+                    },
+                    plugins: { legend: { labels: { font: { family: 'Share Tech Mono' }, boxWidth: 10 } } }
+                }
+            });
+        }
+
+        // Init first stage on load (background, waiting for boot)
+        window.onload = () => {
+             const btns = document.querySelectorAll('.hud-btn');
+             if(btns.length > 0) setStage(0, btns[0]);
+        };
+
+    </script>
+</body>
+</html>
